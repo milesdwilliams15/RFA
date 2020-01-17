@@ -1,0 +1,21 @@
+Package: RFA
+Title: Estimate Average Treatment Effect via Random Forest Residualization
+Version: 0.1
+Authors@R: person("Miles", "Williams", email = "milesdw2@illinois.edu", role = c("aut", "cre"))
+Description: Random Forest Residualization is a procedure for estimating the 
+    average treatment effect (ATE) of some predictor on a response from 
+    observational data. As the name implies, the routine uses random forest 
+    (RF) regression to subtract away the variance in the predictor and 
+    response as explained by a set of confounding variables prior to 
+    estimating the ATE.
+Depends: R (>= 3.4.3)
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.0.2
+Imports: dplyr,
+    tibble,
+    ggplot2
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr
