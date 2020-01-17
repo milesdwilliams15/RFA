@@ -1,0 +1,107 @@
+---
+title: "Random Forest Residualization"
+author: "Miles D. Williams (University of Illinois at Urbana-Champaign, milesdw2@illinois.edu)"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Random Forest Residualization is a procedure for estimating the average treatment effect (ATE) of some predictor on a response from observational data. As the name implies, the routine uses random forest (RF) regression to subtract away the variance in the predictor and response as explained by a set of confounding variables prior to estimating the ATE. Below I provide a brief explanation of the technique and demonstrate how it is implemented in R.
+
+## RFA in a Nutshell
+
+RFA provides an alternative to mathching for generating an ATE from observational data. RFA uses a RF model fitted to the response and treatment variable respectively. Each set of fitted values is estimated as a function of covariates $x_{ip} \in X_i$ where $X_i \not\!\perp\!\!\!\perp y_i$ and $X_i \not\!\perp\!\!\!\perp z_i$. The variables $y_i$ and $z_i$ denote vectors of response and treatment values for the $i^\text{th}$ observation where $i \in I = \{1,2,...,n \}$. 
+
+Because $z_i$ and $y_i$ are not independent of $X_i$, the estimated slope coefficient ($\alpha_1$) from the following naive OLS model will not reflect the true ATE of $z_i$ on $y_i$:
+$$y_i = \alpha_0 + \alpha_1z_i + \epsilon_i. \tag{1}$$
+RFA's solution to this problem is to partial out the variation in $y_i$ and $z_i$ explained by $X_i$ prior to estimating the ATE:
+
+  1. The first step is to fit $y_i$ as a function of $X_i$, where the estimating function is a RF model:
+
+$$
+\begin{aligned}
+\hat{y}_i & = \hat{f}(X_i), \\
+\hat{y}_i^\varepsilon & = y_i - \hat{y}_i.
+\end{aligned} \tag{2}
+$$
+
+  2. This step is then repeated for $z_i$:
+
+$$
+\begin{aligned}
+\hat{z}_i & = \hat{g}(X_i), \\
+\hat{z}_i^\varepsilon & = z_i - \hat{z}_i.
+\end{aligned} \tag{3}
+$$
+
+  3. Finally, the ATE, adjusting for the confounding influence of $X_i$, is obtained by estimating the following OLS model:
+
+$$\hat{y}_i^\varepsilon = \beta_0 + \beta_1\hat{z}_i^\varepsilon + \mu_i.\tag{4}$$
+
+The estimate for $\beta_1$ in the above denotes the ATE.
+
+## How to Implement in R
+
+The `rfa` function in the `RFA` package allows the researcher to easily implenent the RFA routine with observational data. Here, I demonstrate how the program is used with the assistance of the `GerberGreenImai` dataset included in the `Matching` package. This dataset was used in Imai (2005) to replicate and extend the Gerber and Green's (2000) get-out-the-vote (GOT) field experiment. The dataset was used to assess the causal effect of telepone calls on turnout.
+
+Let's get the data into the working evironment:
+
+```{r}
+library(Matching)
+data(GerberGreenImai)
+ggi = GerberGreenImai # give it a shorter name
+```
+
+The first thing to do is install the `RFA` package (if not already), and then open it:
+
+```{r}
+devtools::install_github("milesdwilliams15/RFA")
+library(RFA)
+```
+
+Next, we implement the RFA routine with the function `rfa`. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the first right-hand side variable in the formula. The remaining variables are confounders: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, whether they support the majority party, and their ward of residence in New Haven.
+
+```{r}
+result = rfa(
+  VOTED98 ~ PHN.C1 + # treatment variable
+    AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY + WARD, # confounders
+  ggi
+)
+```
+
+`rfa` takes a formula object---**where the first right-hand side variable is assumed to be the treatment and the remaining covariates confounders**---and the data frame containing the variables as inputs and returns a list containing the estimated ATE:
+
+```{r}
+result$ate # the ATE
+```
+
+and a vector of bootstrapped ATE values:
+
+```{r}
+head(result$bootate)
+```
+
+From the above, we see that the RFA routine estimates the ATE of a GOT phone call on probability of turning out to vote is aproximately `r round(result$ate,3)`. Is this ATE statistically significant? To find out, I can use the `summary.rfa` function to return the summary statistics for the calculated ATE:
+
+```{r}
+summary.rfa(result)
+```
+
+Sure enough, the ATE is statistically significant, with $p < 0.01$.
+
+We can also use the `plot.rfa` function to plot the distribution of bootstrapped ATE replicates:
+
+```{r}
+plot.rfa(result)
+```
+
