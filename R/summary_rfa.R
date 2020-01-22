@@ -21,7 +21,7 @@ summary_rfa = function(model){
   estimate = model$ate
   std.error = sd(model$bootate)
   statistic = estimate/std.error
-  p.value = pnorm(statistic, lower.tail = FALSE)
+  p.value = pnorm(abs(statistic), lower.tail = FALSE)
 
   # Summarize output
   out = data.frame(estimate, std.error, statistic, p.value)
