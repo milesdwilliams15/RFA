@@ -47,10 +47,10 @@ rfa = function(formula, data = NULL){
 
   # Save response and predictor (pre- and post-)
   # to data frame
-  data = data.frame(preY = d1$y,
-                    preZ = d1$z,
-                    postY = yres,
-                    postZ = zres)
+  newdata = data.frame(preY = d1$y,
+                       preZ = d1$z,
+                       postY = yres,
+                       postZ = zres)
 
   # Estimate ATE
   atem = lm(yres ~ zres)
@@ -69,7 +69,7 @@ rfa = function(formula, data = NULL){
     list(
       ate = estimate,
       bootate = ates,
-      data = data
+      dataXY = newdata
     )
   )
 }
