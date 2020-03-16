@@ -64,6 +64,12 @@ rfa = function(formula, data = NULL){
     newatem = lm(newyres ~ zres)
     ates[i] = coef(newatem)[2]
   }
+  
+  # Generate potential outcomes
+  Yt = yhat + coef(atem)[1] + estimate*(1 - zhat)
+  Yc = yhat + coef(atem)[1] - estimate*zhat
+  newdata$Yt = Yt
+  newdata$Yc = Yc
 
   return(
     list(
