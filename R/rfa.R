@@ -38,8 +38,8 @@ rfa = function(formula, data = NULL){
   d2 = as.data.frame(d2)
 
   # Predict response and predictor of interest
-  yhat = suppressWarnings(predict(randomForest::randomForest(y ~ ., data = d1),newdata=d1))
-  zhat = suppressWarnings(predict(randomForest::randomForest(z ~ ., data = d2),newdata=d2))
+  yhat = suppressWarnings(predict(randomForest::randomForest(y ~ ., data = d1)))
+  zhat = suppressWarnings(predict(randomForest::randomForest(z ~ ., data = d2)))
 
   # Residualize response and predictor of interest
   yres = d1$y - yhat
