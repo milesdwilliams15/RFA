@@ -4,4 +4,4 @@ The RFA package allows the user to implement random forest adjustment/residualiz
     devtools::install_github("milesdwilliams15/RFA")
     library(RFA)
 
-To learn more, see the RFA vignette at: http://rpubs.com/milesdwilliams15/566680
+To learn more, see the RFA vignette at: https://rpubs.com/milesdwilliams15/rfa-vignette
