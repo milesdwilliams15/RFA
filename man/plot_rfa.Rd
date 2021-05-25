@@ -4,7 +4,7 @@
 \alias{plot_rfa}
 \title{Wrapper for ggplot2 to Plot Histogram of Empirical ATE Replicates}
 \usage{
-plot_rfa(model)
+plot_rfa(model, varname = "predictor")
 }
 \description{
 This function takes output from a `rfa` object and returns a

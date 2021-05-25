@@ -4,12 +4,13 @@
 #' histogram of the bootstrapped ATE replicates.
 #'
 #' @export
-plot_rfa = function(model){
+plot_rfa = function(model, varname = "predictor"){
   tidy(model$fit) %>%
+    filter(term == "xres") %>%
     ggplot() +
     aes(
       x = estimate,
-      y = varnam,
+      y = varname,
       xmin = conf.low,
       xmax = conf.high
     ) +

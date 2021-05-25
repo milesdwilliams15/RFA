@@ -16,10 +16,10 @@ summary_rfa <- function(model){
 
   # Estimate SE, t-stat, and p-val
   out <- tidy(model$fit) %>%
-    select(term, estimate, std.error, statistic, p.value, conf.low, conf.high) %>%
-    mutate(
-      OOB.response = model$yrf$rsquared,
-      OOB.predictor = model$xrf$rsquared
+    dplyr::select(-df, -outcome) %>%
+    dplyr::mutate(
+      OOB.response = c(NA, model$yrf$r.squared),
+      OOB.predictor = c(NA, model$xrf$r.squared)
     )
 
   # Return output
