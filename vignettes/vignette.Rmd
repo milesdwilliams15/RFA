@@ -9,6 +9,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+### Details
+
+The repository for this project can be accessed [here](https://github.com/milesdwilliams15/RFA). Check out [my website](https://milesdwilliams15.github.io/) to learn more about me and my research.
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -18,9 +22,11 @@ library(tidyverse)
 results <- read_csv(paste0(getwd(),"/results.csv"))
 ```
 
+# Introduction
+
 Random Forest Adjustment (RFA) is a procedure for estimating the relationship between some predictor and a response that takes a flexible approach to adjusting for the confounding influence of covariates. As the name implies, the routine uses random forest regression to adjust for covariates. Below I provide a brief explanation of the technique and demonstrate how it is implemented in R.
 
-## RFA in a Nutshell
+# RFA in a Nutshell
 
 RFA provides an alternative to multiple regression adjustment for controlling for covariates in observational settings. By leveraging a nonparametric machine learning algorithm such as random forests, RFA sidesteps the incidental functional form assumptions imposed by regression based adjustment---additivity and linearity in confounding relationships---thus avoiding potential bias in the recovered marginal relationship between an explanatory variable and response incurred by model mispecification. 
 
@@ -53,7 +59,7 @@ $$
 $$\hat{y}_i^\varepsilon = \beta_0 + \beta_1\hat{z}_i^\varepsilon + \mu_i.\tag{4}$$
 
 
-## What is the Benefit of This Approach?
+# What is the Benefit of This Approach?
 
 The advantage of RFA is that it sidesteps incidental functional form assumptions that the more conventional multiple regression adjustment strategy imposes. This can be seen by considering the following fact about least squares regression, the workhorse adjustment strategy.
 
@@ -121,7 +127,7 @@ At this point, it should be clear why the parametric multiple regression framewo
 This is where the power of RFA lies. RFA imposes no functional form on the relationship between the confounders and the response and causal variable, and it also imposes no functional form assumptions about how any and all of the confounders relate to each other. It sidesteps the Russian doll altogether as it isolates the residual variation in the response and causal variable.
 
 
-## A Simulation
+# A Simulation
 
 To hammer home the point that RFA is advantageous, consider the following results from a simulation I ran. Here are some of the details of said simulation:
 
@@ -158,7 +164,7 @@ Because both SVM and RF take a while to run, for time's sake I restricted my sim
 
 A summary of the performance of each of these approaches is given in the below table. Metrics I use to gauge performance include root mean squared error (MSE), average bias, and coverage of the 95 percent confidence intervals. 
 
-```{r}
+```{r, echo=FALSE}
 results %>%
   group_by(model) %>%
   summarize(
@@ -174,7 +180,7 @@ results %>%
 
 RFA clearly performs the best out of all of the adjustment strategies. This is also clear from the following figure showing the distribution of estimated ATE replicates after 100 runs of the simulation. The estimates provided by RFA are the least prone to error and least biased. However, in terms of coverage, naive OLS, RFA, and SVA are relatively similar.
 
-```{r}
+```{r, echo=FALSE, fig.width=6, fig.height=4}
 ATE <- results$ATE[1]
 results %>%
   select(-ATE) %>%
@@ -198,7 +204,7 @@ results %>%
 ```
 
 
-## How to Implement in R
+# How to Implement in R
 
 The `rfa` function in the `RFA` package allows the researcher to easily implement the RFA routine. Here, I demonstrate how the program is used with the assistance of the `GerberGreenImai` dataset included in the `Matching` package. This dataset was used in Imai (2005) to replicate and extend Gerber and Green's (2000) get-out-the-vote (GOT) field experiment. The dataset was used to assess the causal effect of telephone calls on turnout. Note that this data is used for demonstration purposes only, and so results here should not be taken as confirmation or refutation of the findings of the original authors.
 
@@ -211,12 +217,13 @@ data(GerberGreenImai)
 ggi <- GerberGreenImai # give it a shorter name
 ```
 
-The first thing to do is install the `RFA` package (if not already), and then open it:
+The first thing to do is attach the `RFA` package.
 
 ```{r}
-# devtools::install_github("milesdwilliams15/RFA")
 library(RFA)
 ```
+
+If not already installed, the latest development version can be installed by entering `devtools::install_github("milesdwilliams15/RFA")` in the console.
 
 Next, we implement the RFA routine with the function `rfa`. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the right-hand side variable in the formula. The covariates to control for are given in the `covariates` command in a right-hand side only formula. These covariates are: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, whether they support the majority party, and their ward of residence in New Haven.
 
