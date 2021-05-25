@@ -111,6 +111,7 @@ rfa <- function(
   data <-
     data %>%
     mutate(yres = yres, xres = xres)
+  if(!is.null(clusters)) clusters <- data[, clusters]
   fit <-
     lm_robust(
       yres ~ xres,

@@ -178,7 +178,7 @@ RFA clearly performs the best out of all of the adjustment strategies. This is a
 ATE <- results$ATE[1]
 results %>%
   select(-ATE) %>%
-  small_multiple(
+  dotwhisker::small_multiple(
     dot_args = list(alpha = 0.15)
   ) + 
   geom_hline(yintercept = c(0, ATE), linetype = c(1,2)) +
@@ -228,7 +228,7 @@ rfa_fit <- rfa(
 )
 ```
 
-`rfa_fit` consists of a list containing the residual regression results:
+`rfa_fit` consists of a list containing the fitted regression results:
 
 ```{r}
 rfa_fit$fit
