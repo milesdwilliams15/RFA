@@ -24,7 +24,7 @@
 #' specified, the user can specify "classical", "HC0", "stata" (equivalent to "HC1"),
 #' "HC2", or "HC3". If `clusters` is specified, the options are "CR0", "stata" (CR1),
 #' and "CR2". "stata" is the default.
-#' @param clusters optional name (unquoted) of variable that corresponds to clusters
+#' @param clusters optional name (quoted) of variable that corresponds to clusters
 #' in the data.
 #' @param ... additional commands to override the default settings for implementing
 #' random forests via `ranger`. See the `ranger` package for more details.
@@ -62,6 +62,7 @@ rfa <- function(
   rhs1 <- strsplit(deparse(formula[[3]]), " \\+ ")[[1]]
   rhs2 <- strsplit(deparse(covariates[[2]]), " \\+ ")[[1]]
   rhs <- c(rhs1, rhs2)
+  if(!is.null(clusters)) rhs <- c(rhs, clusters)
   fullform <- reformulate(rhs, lhs)
   data <-
     model.frame(

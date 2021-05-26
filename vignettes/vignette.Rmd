@@ -22,21 +22,21 @@ library(tidyverse)
 results <- read_csv(paste0(getwd(),"/results.csv"))
 ```
 
-# Introduction
+## Introduction
 
-Random Forest Adjustment (RFA) is a procedure for estimating the relationship between some predictor and a response that takes a flexible approach to adjusting for the confounding influence of covariates. As the name implies, the routine uses random forest regression to adjust for covariates. Below I provide a brief explanation of the technique and demonstrate how it is implemented in R.
+Random Forest Adjustment (RFA) is a procedure for estimating the relationship between some predictor and a response after partialing out variation in each given a set of covariates via random forests. Below I provide a brief explanation of the technique and demonstrate how it is implemented in R.
 
-# RFA in a Nutshell
+## RFA in a Nutshell
 
-RFA provides an alternative to multiple regression adjustment for controlling for covariates in observational settings. By leveraging a nonparametric machine learning algorithm such as random forests, RFA sidesteps the incidental functional form assumptions imposed by regression based adjustment---additivity and linearity in confounding relationships---thus avoiding potential bias in the recovered marginal relationship between an explanatory variable and response incurred by model mispecification. 
+RFA is a flexible approach to regression adjustment for controlling for covariates in observational settings. By leveraging a nonparametric machine learning algorithm such as random forests, RFA sidesteps the incidental functional form assumptions imposed by the standard multiple linear regression approach to covariate adjustment. This makes RFA robust to more complex (nonlinear or nonadditive) forms of confounding relationships in observational data that a parametric approach may fail to account for. 
 
 RFA begins by predicting some response $y_i$ and some causal variable of interest $z_i$ as a function of covariates $x_{ip} \in X_i$ where $y_i,z_i \not\!\perp\!\!\!\perp X_i$. The variables $y_i$ and $z_i$ denote vectors of response and predictor values for the $i^\text{th}$ observation where $i \in I = \{1,2,...,n \}$. 
 
-Because $z_i$ and $y_i$ are not independent of $X_i$, the estimated slope coefficient ($\alpha_1$) from the following naive OLS model will not reflect the correct relationship between $z_i$ on $y_i$:
+Because $z_i$ and $y_i$ are not independent of $X_i$, the estimated slope coefficient ($\alpha_1$) from the following linear model may not reflect the correct relationship between $z_i$ on $y_i$:
 $$y_i = \alpha_0 + \alpha_1z_i + \epsilon_i. \tag{1}$$
-RFA's solution to this problem is to partial out the variation in $y_i$ and $z_i$ explained by $X_i$ prior to estimating this relationship using random forests to pre-process the explanatory variable and response.
+RFA's solution to this problem is to partial out the variation in $y_i$ and $z_i$ explained by $X_i$ prior to estimating the relationship between the two using random forests to pre-process the explanatory variable and response. This is done via the following steps:
 
-  1. The first step is to fit $y_i$ as a function of $X_i$ via random forests (the random forest fit for $y_i$ is denoted $\hat{f}_y(X_i)$), and then demean, or residualize, $y_i$ by its predicted conditional mean:
+  1. Fit $y_i$ as a function of $X_i$ via random forests (the random forest fit for $y_i$ is denoted $\hat{f}_y(X_i)$), and then demean, or residualize, $y_i$ by its predicted conditional mean:
 
 $$
 \begin{aligned}
@@ -45,7 +45,7 @@ $$
 \end{aligned} \tag{2}
 $$
 
-  2. This step is then repeated for $z_i$:
+  2. Repeat this procedure for the explanatory variable of interest, $z_i$:
 
 $$
 \begin{aligned}
@@ -61,106 +61,40 @@ $$\hat{y}_i^\varepsilon = \beta_0 + \beta_1\hat{z}_i^\varepsilon + \mu_i.\tag{4}
 
 # What is the Benefit of This Approach?
 
-The advantage of RFA is that it sidesteps incidental functional form assumptions that the more conventional multiple regression adjustment strategy imposes. This can be seen by considering the following fact about least squares regression, the workhorse adjustment strategy.
+The advantage of RFA is that it sidesteps incidental functional form assumptions that the more conventional multiple regression adjustment strategy imposes. This can be easily demonstrated with a simple simulation. 
 
-With the covariates given in the preceding section, define the matrix $\mathbf{W}$ as
-$$
-\mathbf{W} = 
-\begin{bmatrix}
-1 & z_1 & x_1^1 & \cdots & x_1^k \\
-\vdots & \vdots & \vdots & \ddots & \vdots \\
-1 & z_n & x_n^1 & \cdots & x_n^k
-\end{bmatrix}_{n,k+2}
-$$
-and define the matrix $\mathbf{y}$ as
-$$
-\mathbf{y} = 
-\begin{bmatrix}
-y_1 \\
-\vdots \\
-y_n
-\end{bmatrix}_{n,1}.
-$$
-Using ordinary least squares (OLS), we estimate the linear model
-$$\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},$$
-where the solution for the parameters to be estimated is
-$$
-\hat{\boldsymbol{\beta}} = 
-\begin{bmatrix}
-\hat{\beta}_0 \\
-\hat{\beta}_1 \\
-\hat{\beta}_2^1 \\
-\vdots \\
-\hat{\beta}_{k+2}^k
-\end{bmatrix} = (\mathbf{W}^\top\mathbf{W})^{-1} (\mathbf{W}^\top \mathbf{y}).
-$$
-The parameter $\hat{\beta}_1 \in \hat{\boldsymbol{\beta}}$ is the estimated effect of $z_i$ (the causal variable of interest in our running example).
+For said simulation:
 
-This approach is potentially problematic for the following reason. Consider an equivalent way of generating $\hat{\beta}_1$ via OLS. 
-
-  1. Estimate an OLS model excluding $z_i$ from the matrix $\mathbf{W}$ and with $\mathbf{y}$ as the left-hand side variable. Denote the new $n \times k + 1$ matrix that excludes the causal variable interest as $\mathbf{X}$. After estimating this model using the same procedure outlined above, generate predicted values of the outcome variable and estimate the model residuals (note the similarity to step 1 of RFA).
-  
-$$
-\begin{aligned}
-\hat{\mathbf{y}} & = \mathbf{X}\hat{\boldsymbol{\gamma}}, \\
-\hat{\mathbf{y}}^\epsilon & = \mathbf{y} -  \hat{\mathbf{y}}.
-\end{aligned}
-$$
-
-  2. Repeat the above, but have the $n \times 1$ matrix $z$ (a matrix of values for the causal variable) be the left-hand side variable (again, note the similarity to step 2 of RFA).
-  
-$$
-\begin{aligned}
-\hat{\mathbf{z}} & = \mathbf{X}\hat{\boldsymbol{\delta}}, \\
-\hat{\mathbf{z}}^\epsilon & = \mathbf{z} -  \hat{\mathbf{z}}.
-\end{aligned}
-$$
-
-  3. Finally, estimate $\beta_1$ via an OLS model specified as
-
-$$\hat{y}_i^\epsilon = \mu + \beta_1\hat{z}^\epsilon_i + \varepsilon_i.$$
-
-The $\hat{\beta}_1$ generated from step 3 will be equivalent to the one estimated above.
-
-At this point, it should be clear why the parametric multiple regression framework is potentially problematic. Such an approach, while imposing the assumption that $y_i$ and $z_i$ are linearly related, also imposes the assumption that the confounding variables are linearly and additively associated with $y_i$ and $z_i$. And this equivalent way of expressing OLS given above is only the first layer of an onion of linear additive models within linear additive models which could be used to estimate equivalent parameters for all of the variables contained in $\mathbf{W}$. This is not to mention the googleplex of potential "sub"-parameters implied by assuming linearity and additivity *all the way down*. If in any of the linear additive models upon linear additive models is misspecified, this portends bias in $\hat{\beta}_1$.
-
-This is where the power of RFA lies. RFA imposes no functional form on the relationship between the confounders and the response and causal variable, and it also imposes no functional form assumptions about how any and all of the confounders relate to each other. It sidesteps the Russian doll altogether as it isolates the residual variation in the response and causal variable.
-
-
-# A Simulation
-
-To hammer home the point that RFA is advantageous, consider the following results from a simulation I ran. Here are some of the details of said simulation:
-
-  1. I set $n = 500$ and set the ATE ($\beta_1$) to 5.
-  2. The "true" d.g.p. for the outcome variable $y_i$ is given as
+  1. I set $n = 500$ and set the the parameter for the true relationship between a response and explanatory variable of interest ($\beta_1$) to 5.
+  2. The data-generating process for the outcome variable $y_i$ is given as
   
 $$y_i = 1 + 5z_i + 0.5x_i + x_i^2 + e_i:e_i \sim \mathcal{N}(0, \sigma = 10).$$
 
-  3. The causal variable $z_i$ is given as
+  3. The data generating process for the causal variable $z_i$ is given as
   
 $$z_i = -1 + 0.05\space \text{stand}(x_i) - 0.1 \space \text{stand}(x_i)^2 + u_i: u_i \sim \mathcal{N}(0, \sigma = 2).$$
 
   4. The confounding variable $x_i \sim \mathcal{N}(50, \sigma = 10)$.
 
-I try a number of methods to recover estimates of the ATE of $z_i$:
+For each iteration of the simulated data-generating process, I recover estimates of the effect of $z_i$ on $y_i$ via:
 
-  1. A naive OLS model:
+  1. A naive linear regression model:
   
 $$y_i = \beta_0 + \beta_1z_i + \epsilon_i.$$
 
-  2. An OLS model with controls:
+  2. A a multiple regression model with controls:
   
 $$y_i = \beta_0 + \beta_1z_i + \beta_2x_i + \epsilon_i.$$
 
-  3. An interaction model with $x_i$ mean centered:
+  3. An interactive regression model with $x_i$ mean centered (otherwise known as the [Lin estimator](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-1/Agnostic-notes-on-regression-adjustments-to-experimental-data--Reexamining/10.1214/12-AOAS583.full)):
 
 $$y_i = \beta_0 + \beta_1z_i + \beta_2x_i + \beta_3z_i\cdot(x_i - \bar{x}) + \epsilon_i.$$
 
-  4. Adjust via a Support Vector Machine (SVM)---I use the same steps as with RFA, save that I control for the confounding effect of $x_i$ with SVM.
+  4. Adjustment via a Support Vector Machine (SVM)---an alternative machine learner to random forests.
   
-  5. Finally, I use RFA.
+  5. Adjustment via random forests (RFA).
   
-Because both SVM and RF take a while to run, for time's sake I restricted my simulation to 100 iterations. 
+Because both SVM and random forests take a while to run, for time's sake I restricted the analysis to 100 iterations. 
 
 A summary of the performance of each of these approaches is given in the below table. Metrics I use to gauge performance include root mean squared error (MSE), average bias, and coverage of the 95 percent confidence intervals. 
 
@@ -178,7 +112,7 @@ results %>%
 ```
 
 
-RFA clearly performs the best out of all of the adjustment strategies. This is also clear from the following figure showing the distribution of estimated ATE replicates after 100 runs of the simulation. The estimates provided by RFA are the least prone to error and least biased. However, in terms of coverage, naive OLS, RFA, and SVA are relatively similar.
+RFA clearly performs the best out of all of the adjustment strategies. This is also clear from the following figure showing the distribution of estimates after 100 runs of the simulation. The estimates provided by RFA are the least prone to error and least biased. However, in terms of coverage, naive OLS, RFA, and SVA are relatively similar.
 
 ```{r, echo=FALSE, fig.width=6, fig.height=4}
 ATE <- results$ATE[1]
@@ -208,16 +142,16 @@ results %>%
 
 The `rfa` function in the `RFA` package allows the researcher to easily implement the RFA routine. Here, I demonstrate how the program is used with the assistance of the `GerberGreenImai` dataset included in the `Matching` package. This dataset was used in Imai (2005) to replicate and extend Gerber and Green's (2000) get-out-the-vote (GOT) field experiment. The dataset was used to assess the causal effect of telephone calls on turnout. Note that this data is used for demonstration purposes only, and so results here should not be taken as confirmation or refutation of the findings of the original authors.
 
-Let's get the data into the working environment:
+First, let's get the data into the working environment:
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(tidyverse) # grammar
 library(Matching)  # for the data
 data(GerberGreenImai)
 ggi <- GerberGreenImai # give it a shorter name
 ```
 
-The first thing to do is attach the `RFA` package.
+Next, to implement RFA, we need to attach the `RFA` package:
 
 ```{r}
 library(RFA)
@@ -225,7 +159,17 @@ library(RFA)
 
 If not already installed, the latest development version can be installed by entering `devtools::install_github("milesdwilliams15/RFA")` in the console.
 
-Next, we implement the RFA routine with the function `rfa`. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the right-hand side variable in the formula. The covariates to control for are given in the `covariates` command in a right-hand side only formula. These covariates are: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, whether they support the majority party, and their ward of residence in New Haven.
+The RFA routine is implemented with the function `rfa(...)`. The help file for the function can be accessed by entering `?rfa`. The function accepts the following arguments:
+
+
+ - `formula`: a formula object where the left-hand variable is the outcome and the right-hand variable is the explanatory variable of interest.
+  - `covariates`: a right-handed formula object specifying the covariates to be used in the random forest regressions.
+  - `data`:	an optional data frame containing the variables used to implement the RFA routine.
+  - `se_type`: specifies the standard errors to be returned. If 'clusters' is not specified, the user can specify "classical", "HC0", "stata" (equivalent to "HC1"), "HC2", or "HC3". If 'clusters' is specified, the options are "CR0", "stata" (CR1), and "CR2". "stata" is the default.
+  - `clusters`: optional name (quoted) of variable that corresponds to clusters in the data.
+  - `...`: additional commands to override the default settings for implementing random forests via 'ranger'. See the `ranger` package for more details.
+
+Below is an example of how to use `rfa` with the `ggi` dataset. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the right-hand side variable in the formula. The covariates to control for are given in the `covariates` command in a right-hand side only formula. These covariates are: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, whether they support the majority party, and their ward of residence in New Haven.
 
 ```{r}
 rfa_fit <- rfa(

@@ -21,7 +21,7 @@ specified, the user can specify "classical", "HC0", "stata" (equivalent to "HC1"
 "HC2", or "HC3". If `clusters` is specified, the options are "CR0", "stata" (CR1),
 and "CR2". "stata" is the default.}
 
-\item{clusters}{optional name (unquoted) of variable that corresponds to clusters
+\item{clusters}{optional name (quoted) of variable that corresponds to clusters
 in the data.}
 
 \item{...}{additional commands to override the default settings for implementing
