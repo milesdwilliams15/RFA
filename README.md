@@ -1,4 +1,12 @@
 # RFA
+![R-version](https://img.shields.io/badge/R%20%3E%3D-3.4.3-brightgreen)
+![updated](https://img.shields.io/badge/last%20update-05--26--2021-brightgreen)
+![version](https://img.shields.io/badge/version-0.1.0.2-brightgreen)
+![license](https://img.shields.io/badge/license-GPL--2-red)
+![encoding](https://img.shields.io/badge/encoding-UTF--8-red)
+[![orchid](https://img.shields.io/badge/ORCID-0000--0003--0192--5542-brightgreen)](https://orcid.org/0000-0003-0192-5542)
+
+
 `RFA` is an R package for implementing random forest adjustment (RFA). RFA is a regression adjustment approach that partials out variation in a response and explanatory variable of interest given a set of covariates using random forests. The latest version of the package relies on `ranger`, which is a fast implementation of random forests.
 
 
