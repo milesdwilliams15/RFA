@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+options(digits = 3)
 library(tidyverse)
 results <- read_csv(paste0(getwd(),"/results.csv"))
 ```
@@ -293,7 +294,7 @@ imp %>%
   )
 ```
 
-Outside of variable importance, we can also examine the "correlation of distortion" (COD), which summarizes the difference, in standard deviation units, between the *effective* sample generated through random forest adjustment, and the *nominal* sample---the original data sample collected. The COD can help summarize how (un)representative the sample was that was used to identify the point estimate returned via random forest adjustment.
+Outside of variable importance, we can also examine the "coefficient of distortion" (COD), which summarizes the difference, in standard deviation units, between the *effective* sample generated through random forest adjustment, and the *nominal* sample---the original data sample collected. The COD can help summarize how (un)representative the sample was that was used to identify the point estimate returned via random forest adjustment.
 
 To summarize, the COD is calculated for a given covariate $p$ by first scaling it to standard deviation units and then taking its weighted average:
 $$\text{COD}_p = \sum_{i = 1}^N w_i\left[ \frac{x_{ip} - \bar{x}_p}{\text{SD}(x_{ip})}\right] / \sum_{i=1}^N w_i.$$
@@ -306,7 +307,7 @@ The COD is calculated for each covariate used in estimation with the `get_cod()`
   - `include_se` = `TRUE` by default. This specifies whether you'd like to report standard errors and related summary statistics along side the COD estimates per covariate.
   - `bootsims` = the number of bootstrap iterations to perform to compute the standard errors. By default, this is set to 1,000.
 
-Inference for each of the COD estimates is done via bootstrapping with weighted resampling, where the probability of a given observation being sampled per iteration is equal to $w_i / \sum_iw_i$.
+Inference for each of the COD estimates is done via bootstrapping.
 
 Applying `get_cod` to the fitted `rfa` object, we get:
 
@@ -339,3 +340,11 @@ ggplot(cods) +
   )
 ```
 
+These tools, combined, help to demystify random forest adjusted estimates. For instance, the importance metrics above reveal a moderately strong correlation between the importance of covariates in predicting the explanatory variable of interest (a get-out-the-vote phone call) and the response (voter turnout). This is suggestive of a nontrivial degree of confounding in the relationship between the explanatory variable and response.
+
+Further, the COD estimates suggest that the process of adjusting for this confounding produces an effective sample that differs markedly from the nominal sample. Notably, the effective sample skews significantly older, is more likely to have voted in the previous congressional election two years prior, and is less likely to be a new voter, among other differences. This suggests a more constrained set of cases to which the identified relationship between GOT phone calls and turnout can be generalized. 
+
+
+## Conclusion
+
+Taken together, the tools in the `RFA` package are powerful allies in the analysis of observational data. Random forest adjustment has the potential to be robust to various forms of confounding in observational data, while it also is amenable to helpful diagnostics that contextualize the reported results.
