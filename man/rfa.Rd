@@ -29,7 +29,7 @@ random forests via `ranger`. See the `ranger` package for more details.}
 }
 \value{
 `rfa` returns a list containing the model object (`lm_robust` object from
-the `estimatr`` package), the data used to estimate the the model, and the
+the `estimatr`` package), the data used to estimate the the model, a covariates matrix, and the
 random forest regressions for the response and explanatory variable
 (`ranger` objects from the `ranger` package).
 }

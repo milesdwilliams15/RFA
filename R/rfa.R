@@ -35,7 +35,7 @@
 #' RFA substracts away the variance in the predictor of interest and response explained
 #' by confounding variables via random forest regression.
 #' @return `rfa` returns a list containing the model object (`lm_robust` object from
-#' the `estimatr`` package), the data used to estimate the the model, and the
+#' the `estimatr`` package), the data used to estimate the the model, a covariates matrix, and the
 #' random forest regressions for the response and explanatory variable
 #' (`ranger` objects from the `ranger` package).
 #' @export
@@ -126,6 +126,7 @@ rfa <- function(
     fit = fit,
     yrf = yrf,
     xrf = xrf,
+    covmat = covmat,
     data = data
   )
   return(lst)

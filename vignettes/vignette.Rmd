@@ -59,7 +59,7 @@ $$
 $$\hat{y}_i^\varepsilon = \beta_0 + \beta_1\hat{z}_i^\varepsilon + \mu_i.\tag{4}$$
 
 
-# What is the Benefit of This Approach?
+## What is the Benefit of This Approach?
 
 The advantage of RFA is that it sidesteps incidental functional form assumptions that the more conventional multiple regression adjustment strategy imposes. This can be easily demonstrated with a simple simulation. 
 
@@ -138,7 +138,7 @@ results %>%
 ```
 
 
-# How to Implement in R
+## How to Implement in R
 
 The `rfa` function in the `RFA` package allows the researcher to easily implement the RFA routine. Here, I demonstrate how the program is used with the assistance of the `GerberGreenImai` dataset included in the `Matching` package. This dataset was used in Imai (2005) to replicate and extend Gerber and Green's (2000) get-out-the-vote (GOT) field experiment. The dataset was used to assess the causal effect of telephone calls on turnout. Note that this data is used for demonstration purposes only, and so results here should not be taken as confirmation or refutation of the findings of the original authors.
 
@@ -162,12 +162,12 @@ If not already installed, the latest development version can be installed by ent
 The RFA routine is implemented with the function `rfa(...)`. The help file for the function can be accessed by entering `?rfa`. The function accepts the following arguments:
 
 
- - `formula`: a formula object where the left-hand variable is the outcome and the right-hand variable is the explanatory variable of interest.
-  - `covariates`: a right-handed formula object specifying the covariates to be used in the random forest regressions.
-  - `data`:	an optional data frame containing the variables used to implement the RFA routine.
-  - `se_type`: specifies the standard errors to be returned. If 'clusters' is not specified, the user can specify "classical", "HC0", "stata" (equivalent to "HC1"), "HC2", or "HC3". If 'clusters' is specified, the options are "CR0", "stata" (CR1), and "CR2". "stata" is the default.
-  - `clusters`: optional name (quoted) of variable that corresponds to clusters in the data.
-  - `...`: additional commands to override the default settings for implementing random forests via 'ranger'. See the `ranger` package for more details.
+ - `formula` = a formula object where the left-hand variable is the outcome and the right-hand variable is the explanatory variable of interest.
+  - `covariates` = a right-handed formula object specifying the covariates to be used in the random forest regressions.
+  - `data` =	an optional data frame containing the variables used to implement the RFA routine.
+  - `se_type` = specifies the standard errors to be returned. If 'clusters' is not specified, the user can specify "classical", "HC0", "stata" (equivalent to "HC1"), "HC2", or "HC3". If 'clusters' is specified, the options are "CR0", "stata" (CR1), and "CR2". "stata" is the default.
+  - `clusters` = optional name (quoted) of variable that corresponds to clusters in the data.
+  - `...` = additional commands to override the default settings for implementing random forests via 'ranger'. See the `ranger` package for more details.
 
 Below is an example of how to use `rfa` with the `ggi` dataset. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the right-hand side variable in the formula. The covariates to control for are given in the `covariates` command in a right-hand side only formula. These covariates are: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, whether they support the majority party, and their ward of residence in New Haven.
 
@@ -214,13 +214,13 @@ Sure enough, the ATE is statistically significant, with $p < 0.01$.
 
 We can also use the `plot_rfa` function to plot the distribution of bootstrapped ATE replicates:
 
-```{r}
+```{r, fig.height=3, fig.width=4}
 plot_rfa(rfa_fit)
 ```
 
 Further, since `plot_rfa` is a wrapper for `ggplot2`, we can modify the RFA plot however we see fit:
 
-```{r}
+```{r, fig.height=3, fig.width=6}
 plot_rfa(rfa_fit, varname = "Phone Call") +
   labs(
     x = "Estimated Effect of GOT",
