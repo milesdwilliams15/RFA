@@ -223,11 +223,119 @@ Further, since `plot_rfa` is a wrapper for `ggplot2`, we can modify the RFA plot
 ```{r, fig.height=3, fig.width=6}
 plot_rfa(rfa_fit, varname = "Phone Call") +
   labs(
-    x = "Estimated Effect of GOT",
+    x = "Estimate",
     y = NULL,
-    title = "I Like ggplot"
+    title = "Effect of GOT phone calls on voter turnout"
   ) +
   geom_vline(xintercept = 0, lty = 2) +
   theme_test()
+```
+
+
+## Diagnosing RFA Estimates
+
+The point estimate reported via random forest adjustment may not always be the only, or even most interesting, quantity of importance. Researchers may also have an interest in assessing which covariates in the data sample were the most substantial source of confounding. They may also wish to characterize the *effective* sample used to identify the partial relationship between the explanatory variable and response. As [Aronow and Samii (2016)](https://onlinelibrary.wiley.com/doi/abs/10.1111/ajps.12185) caution, the process of adjusting for covariates often distorts the data sample used to identify some causal relationship of interest. Often, reported estimates reflect a local effect, that cannot be generalized beyond a more circumscribed data sample than that used at the outset of the analysis.
+
+The latest version of the `RFA` package includes two additional functions that help in performing these diagnostics. These are `get_cod()` and `get_importance()`.
+
+The latter returns a data frame that reports variable importance metrics for each of the covariates used in the analysis, with respect to the response and explanatory variable of interest. 
+
+Usage for `get_importance` is quite simple. First, if you'd like to obtain importance metrics, when you perform the RFA estimation, use the `importance` argument to specify either "impurity" or "permutation." These are the two standard approaches to quantifying the relative predictive importance of covariates in random forests. The first sums the number of splits that include a given variable across all of the regression trees grown in the random forest (this is the Gini importance or Mean Decrease in Impurity). The second is the average decrease in the accuracy of model predictions if a given variable's relationship with an outcome is "broken" via the permutation process (this is also known as Mean Decrease in Accuracy).
+
+For example, if we wanted to get the Gini importance for covariates we would simply specify:
+
+```{r}
+rfa_fit <- rfa(
+  formula = VOTED98 ~ PHN.C1, # treatment variable
+  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY + WARD, # confounders
+  data = ggi,
+  importance = "impurity" # Specify impurity importance
+)
+```
+
+Then, we can use `get_importance` to return the importance metrics of the covariates with respect to both the response and explanatory variable of interest:
+
+```{r}
+get_importance(rfa_fit)
+```
+
+These importance metrics can be easily visualized:
+
+```{r, fig.height=8, fig.width=6}
+imp <- get_importance(rfa_fit)
+imp %>%
+  gather(
+    key = "outcome",
+    value = "value",
+    -term
+  ) %>%
+  ggplot() +
+  aes(
+    x = value,
+    y = reorder(term, value),
+    color = outcome
+  ) +
+  geom_point() +
+  scale_x_log10() +
+  labs(
+    x = "Gini Importance (log-10 scale)",
+    y = NULL,
+    title = "Variable Importance"
+  )
+```
+
+They can also be analyzed to assess the extent to which confoundingness is correlated between the response and explanatory variable of interest:
+
+```{r}
+imp %>%
+  summarise(
+    correlation = cor(response, predictor)
+  )
+```
+
+Outside of variable importance, we can also examine the "correlation of distortion" (COD), which summarizes the difference, in standard deviation units, between the *effective* sample generated through random forest adjustment, and the *nominal* sample---the original data sample collected. The COD can help summarize how (un)representative the sample was that was used to identify the point estimate returned via random forest adjustment.
+
+To summarize, the COD is calculated for a given covariate $p$ by first scaling it to standard deviation units and then taking its weighted average:
+$$\text{COD}_p = \sum_{i = 1}^N w_i\left[ \frac{x_{ip} - \bar{x}_p}{\text{SD}(x_{ip})}\right] / \sum_{i=1}^N w_i.$$
+The vector of weights $w_i$ used is simply the square of the residualized explanatory variable of interest ($z_i$):
+$$w_i = (z_i^\varepsilon)^2 = [z_i - \hat{f}_z(x_i)]^2.$$
+
+The COD is calculated for each covariate used in estimation with the `get_cod()` function. The function accepts three arguments:
+
+  - `rfa` = the fitted `rfa` object.
+  - `include_se` = `TRUE` by default. This specifies whether you'd like to report standard errors and related summary statistics along side the COD estimates per covariate.
+  - `bootsims` = the number of bootstrap iterations to perform to compute the standard errors. By default, this is set to 1,000.
+
+Inference for each of the COD estimates is done via bootstrapping with weighted resampling, where the probability of a given observation being sampled per iteration is equal to $w_i / \sum_iw_i$.
+
+Applying `get_cod` to the fitted `rfa` object, we get:
+
+```{r}
+cods <- 
+  get_cod(rfa_fit, bootsims = 100) # set to 100 to speed up
+cods # view
+```
+
+Like the importance metrics, these results can be easily visualized:
+
+```{r, fig.height=8, fig.width=6}
+ggplot(cods) +
+  aes(
+    x = estimate,
+    y = reorder(term, estimate^2),
+    xmin = conf.low,
+    xmax = conf.high
+  ) +
+  geom_point() +
+  geom_errorbarh(height = 0) +
+  geom_vline(
+    xintercept = 0,
+    lty = 2
+  ) +
+  labs(
+    x = "Distortion with 95% confidence intervals",
+    y = NULL,
+    title = "Effective vs. Nominal Data Samples"
+  )
 ```
 

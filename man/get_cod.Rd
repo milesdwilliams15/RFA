@@ -33,9 +33,8 @@ interest and the response, and the nominal sample used prior to estimation.
 \details{
 The function accepts an `rfa` fitted object, and returns a tibble containing
 the COD for each covariate included in estimation, and its standard error.
-Standard errors are produced via bootstrapping, with resampling probabilities
-per observation weighted by the random forest regression weights.
+Standard errors are produced via bootstrapping.
 }
 \references{
-Aronow, Peter M. and Cyrus Samii. 2016. "Does Regression Produce Representative Estimates of Causal Effects? American Journal of Political Science 60(1): 250-67.
+Aronow, Peter M. and Cyrus Samii. 2016. "Does Regression Produce Representative Estimates of Causal Effects?" American Journal of Political Science 60(1): 250-67.
 }

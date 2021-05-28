@@ -7,6 +7,8 @@
 #' regression. The latest version relies on the ranger package, which
 #' provides a fast implementation of the random forest aglorithm (Brieman 2001).
 #'
+#' @references Breiman, Leo. 2001. "Random Forests." Machine Learning 45: 5-32.
+#'
 #' The function accepts a formula object and dataframe
 #' as inputs. rfa() assumes that the first right-hand side variable in the
 #' formula object is the explanatory variable of interest and that all other

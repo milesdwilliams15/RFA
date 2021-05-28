@@ -15,8 +15,7 @@
 #'
 #' The function accepts an `rfa` fitted object, and returns a tibble containing
 #' the COD for each covariate included in estimation, and its standard error.
-#' Standard errors are produced via bootstrapping, with resampling probabilities
-#' per observation weighted by the random forest regression weights.
+#' Standard errors are produced via bootstrapping.
 #'
 #' @param rfa an `rfa()` fitted object.
 #'
@@ -26,7 +25,7 @@
 #'
 #' @return The function returns a data frame containing at minimum a vector of covariate names (`term`) and the estimated COD per covariate (`estimate`). If `include_se = TRUE`, additional entries include the standard error, test statistic, p-value, and 95% confidence intervals.
 #'
-#' @references Aronow, Peter M. and Cyrus Samii. 2016. "Does Regression Produce Representative Estimates of Causal Effects? American Journal of Political Science 60(1): 250-67.
+#' @references Aronow, Peter M. and Cyrus Samii. 2016. "Does Regression Produce Representative Estimates of Causal Effects?" American Journal of Political Science 60(1): 250-67.
 #'
 #' @export
 get_cod <-
@@ -49,7 +48,7 @@ get_cod <-
     stand <- function(x) (x - mean(x)) / sd(x)
 
     # function to get weighted mean
-    wmean <- function(x) sum(wts * x) / sum(wts)
+    wmean <- function(x, wt = wts) sum(wt * stand(x)) / sum(wt)
 
     # compute COD for each variable in covmat
     cod <- apply(covmat, 2, wmean)
@@ -60,6 +59,7 @@ get_cod <-
 
     # get standard errors via bootstrapping
     if(include_se == TRUE) {
+      message("Bootstrapping....")
       bootcods <-
         replicate(
           n = bootsims,
@@ -68,10 +68,10 @@ get_cod <-
               sample(
                 1:nrow(covmat),
                 replace = TRUE,
-                size = nrow(covmat),
-                prob = wts / sum(wts)
+                size = nrow(covmat)
               )
-            apply(covmat[b, ], 2, wmean)
+            apply(covmat[b, ], 2,
+                  function(x) wmean(x, wt = wts[b]))
           }
         )
       codtab$std.error <-

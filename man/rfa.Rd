@@ -42,17 +42,20 @@ regression. The latest version relies on the ranger package, which
 provides a fast implementation of the random forest aglorithm (Brieman 2001).
 }
 \details{
-The function accepts a formula object and dataframe
-as inputs. rfa() assumes that the first right-hand side variable in the
-formula object is the explanatory variable of interest and that all other
-variables on the right-hand side are confounding variables used to
-residualize the predictor and response prior to estimating the ATE. NA
-values are allowed.
-
 The RFA routine provides an estimate of the marginal relationship
 between some
 predictor (either binary or continuous) and a response variable, adjusting
 for the confounding influence of other variables. As its name implies,
 RFA substracts away the variance in the predictor of interest and response explained
 by confounding variables via random forest regression.
+}
+\references{
+Breiman, Leo. 2001. "Random Forests." Machine Learning 45: 5-32.
+
+The function accepts a formula object and dataframe
+as inputs. rfa() assumes that the first right-hand side variable in the
+formula object is the explanatory variable of interest and that all other
+variables on the right-hand side are confounding variables used to
+residualize the predictor and response prior to estimating the ATE. NA
+values are allowed.
 }
