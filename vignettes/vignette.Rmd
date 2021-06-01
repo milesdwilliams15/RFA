@@ -9,7 +9,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-### Details
+### Details <img src="logo.png" align="right" height="130" />
 
 The repository for this project can be accessed [here](https://github.com/milesdwilliams15/RFA). Check out [my website](https://milesdwilliams15.github.io/) to learn more about me and my research.
 

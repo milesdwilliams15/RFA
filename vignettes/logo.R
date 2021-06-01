@@ -38,6 +38,6 @@ sticker(
   p_color = "darkblue",
   h_fill = "darkorange",
   h_color = "darkblue",
-  #url = "https://github.com/milesdwilliams15/RFA",
-  filename = "man/logo.png"
+  url = "https://github.com/milesdwilliams15/RFA",
+  filename = "inst/logo.png"
 )
