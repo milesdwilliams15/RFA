@@ -1,4 +1,5 @@
-# RFA
+# RFA <img src="inst/logo.png" align="right" height="130" />
+
 ![R-version](https://img.shields.io/badge/R%20%3E%3D-3.4.3-brightgreen)
 ![updated](https://img.shields.io/badge/last%20update-05--28--2021-brightgreen)
 ![version](https://img.shields.io/badge/version-0.1.0.2-brightgreen)
