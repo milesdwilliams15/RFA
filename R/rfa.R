@@ -62,7 +62,7 @@ rfa <- function(
   # Get the full data frame
   lhs <- deparse(formula[[2]])
   rhs1 <- strsplit(deparse(formula[[3]]), " \\+ ")[[1]]
-  rhs2 <- unlist(strsplit(deparse(covariates[[2]]), " \\+ ")
+  rhs2 <- unlist(strsplit(deparse(covariates[[2]]), " \\+ "))
   rhs <- c(rhs1, rhs2)
   if(!is.null(clusters)) rhs <- c(rhs, clusters)
   fullform <- reformulate(rhs, lhs)
