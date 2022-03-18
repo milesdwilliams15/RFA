@@ -8,7 +8,7 @@
 [![orchid](https://img.shields.io/badge/ORCID-0000--0003--0192--5542-brightgreen)](https://orcid.org/0000-0003-0192-5542)
 
 
-`RFA` is an R package for implementing random forest adjustment (RFA). RFA is a regression adjustment approach that partials out variation in a response and explanatory variable of interest given a set of covariates using random forests. The latest version of the package relies on `ranger`, which is a fast implementation of random forests.
+`RFA` is an R package for implementing random forest adjustment (RFA). RFA is a regression adjustment approach that partials out variation in a response and explanatory variable of interest given a set of covariates using random forests. The latest version of the package relies on `ranger`, which is a fast implementation of random forests. To learn more about the method, download my latest working paper [here](https://github.com/milesdwilliams15/rfa-paper/raw/main/draft2.pdf). For a more comprehensive summary of how to implement RFA in R, see the [RFA vignette](https://rpubs.com/milesdwilliams15/rfa-vignette).
 
 
 # Installation
@@ -30,4 +30,4 @@ For a generic dataset, `dataset`, that contains vectors of some response variabl
 
 The function returns a list consisting of an `estimatr::lm_robust` object, the computed random forest regressions for the response and explanatory variable (`ranger::ranger` objects), and the dataset used to generate random forest adjusted estimates with the partialized versions of the response and explanatory variable appended.
 
-For a more comprehensive summary of the approach and how to implement it in R, see the [RFA vignette](https://rpubs.com/milesdwilliams15/rfa-vignette).
+
