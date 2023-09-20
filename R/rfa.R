@@ -4,8 +4,13 @@
 #' variable on some response variable using a procedure called Random Forest
 #' Adjustment (RFA). RFA partials out the variation in a response and explanatory
 #' variable of interest as a function of a set of covariates using random forest
-#' regression. The latest version relies on the ranger package, which
+#' regression. The latest version relies on the `{ranger}` package, which
 #' provides a fast implementation of the random forest aglorithm (Brieman 2001).
+#'
+#' The package further supports fixed and random effects as well. For random effects,
+#' the `lmer` function from the `{lme4}` package is used. By specifying fixed or 
+#' random effects, the response, treatment, and covariates are demeaned according to
+#' any fixed or random effects specified prior to random forest adjustment.
 #'
 #' @references Breiman, Leo. 2001. "Random Forests." Machine Learning 45: 5-32.
 #'
@@ -20,6 +25,9 @@
 #' and the right-hand variable is the explanatory variable of interest.
 #' @param covariates a formula object only containing the right-hand side specifying
 #' the covariates to be used in the random forest regressions.
+#' @param fes_and_res a formula object only containing the righ-hand side specifying 
+#' any fixed effects or random effects. If random effects, you should use the notation
+#' `~ (1 | id)` as in the `{lme4}` package.
 #' @param data an optional data frame containing the variables used to
 #' implement the RFA routine.
 #' @param se_type specifies the standard errors to be returned. If `clusters` is not
@@ -44,6 +52,7 @@
 rfa <- function(
   formula,
   covariates,
+  fes_and_res = NULL,
   data = NULL,
   se_type = "stata",
   clusters = NULL,
@@ -63,13 +72,21 @@ rfa <- function(
   lhs <- deparse(formula[[2]])
   rhs1 <- strsplit(deparse(formula[[3]]), " \\+ ")[[1]]
   rhs2 <- unlist(strsplit(deparse(covariates[[2]]), " \\+ "))
-  rhs <- c(rhs1, rhs2)
+  if(!is.null(fes_and_res)) {
+    fes  <- unlist(strsplit(deparse(fes_and_res[[2]]), " \\+ "))
+    any_res <- str_detect(fes, "\\|")
+    rhs <- c(rhs1, rhs2, fes)
+  } else {
+    rhs <- c(rhs1, rhs2)
+    any_res <- FALSE
+  }
   if(!is.null(clusters)) rhs <- c(rhs, clusters)
   fullform <- reformulate(rhs, lhs)
-  data <-
-    model.frame(
-      fullform, data = data
-    )
+  if(any_res) {
+    data <- lmer(fullform, data = data) |> model.frame()
+  } else {
+    data <- model.frame(fullform, data)
+  }
 
   # Get design matrix of covariates
   covmat <-
@@ -88,7 +105,35 @@ rfa <- function(
       )[, -1]
     )
 
-  # Residulalize the response
+  # Demean the response, treatment, and covariates for any FEs and REs
+  if(!is.null(fes_and_res)) {
+    if(any_res) {
+      for(i in 1:ncol(covmat)) {
+        covmat[, i] <- resid(
+          lmer(update(fes_and_res, covmat[, i] ~ .), data = data)
+        )
+      }
+      for(i in 1:ncol(varmat)) {
+        varmat[, i] <- resid(
+          lmer(update(fes_and_res, covmat[, i] ~ .), data = data)
+        )
+      }
+    } else {
+      for(i in 1:ncol(covmat)) {
+        covmat[, i] <- resid(
+          lm(update(fes_and_res, covmat[, i] ~ .), data = data)
+        )
+      }
+      for(i in 1:ncol(varmat)) {
+        varmat[, i] <- resid(
+          lm(update(fes_and_res, covmat[, i] ~ .), data = data)
+        )
+      }
+    }
+  }
+
+  # Adjust for covaraites using random forests
+  ## The response
   yrf <-
     ranger(
       y = varmat[, 1],
@@ -99,7 +144,7 @@ rfa <- function(
   if(!is.null(dim(yhat))) yhat <- yhat[, 2]
   yres <- varmat[, 1] - yhat
 
-  # Residualize the treatment
+  ## The treatment
   xrf <-
     ranger(
       y = varmat[, 2],
@@ -110,7 +155,7 @@ rfa <- function(
   if(!is.null(dim(xhat))) xhat <- xhat[, 2]
   xres <- varmat[, 2] - xhat
 
-  # Estimate
+  # Estimate the marginal effect
   data <-
     data %>%
     mutate(yres = yres, xres = xres)
