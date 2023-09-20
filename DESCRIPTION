@@ -1,6 +1,6 @@
 Package: RFA
 Title: Estimate Average Treatment Effect via Random Forest Residualization
-Version: 0.1.0.2
+Version: 0.2
 Authors@R: person("Miles", "Williams", email = "milesdw2@illinois.edu", 
             role = c("aut", "cre"), comment = c(ORCID = "0000-0003-0192-5542"))
 Description: Random Forest Residualization is a procedure for estimating the 
@@ -17,6 +17,7 @@ Depends:
     ggplot2,
     estimatr,
     ranger,
+    lme4,
     R (>= 3.4.3)
 Suggests: knitr,
     rmarkdown
