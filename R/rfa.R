@@ -8,7 +8,7 @@
 #' provides a fast implementation of the random forest aglorithm (Brieman 2001).
 #'
 #' The package further supports fixed and random effects as well. For random effects,
-#' the `lmer` function from the `{lme4}` package is used. By specifying fixed or 
+#' the `lmer` function from the `{lme4}` package is used. By specifying fixed or
 #' random effects, the response, treatment, and covariates are demeaned according to
 #' any fixed or random effects specified prior to random forest adjustment.
 #'
@@ -25,7 +25,7 @@
 #' and the right-hand variable is the explanatory variable of interest.
 #' @param covariates a formula object only containing the right-hand side specifying
 #' the covariates to be used in the random forest regressions.
-#' @param fes_and_res a formula object only containing the righ-hand side specifying 
+#' @param fes_and_res a formula object only containing the righ-hand side specifying
 #' any fixed effects or random effects. If random effects, you should use the notation
 #' `~ (1 | id)` as in the `{lme4}` package.
 #' @param data an optional data frame containing the variables used to
@@ -110,29 +110,41 @@ rfa <- function(
     if(any_res) {
       for(i in 1:ncol(covmat)) {
         covmat[, i] <- resid(
-          lmer(update(fes_and_res, covmat[, i] ~ .), data = data)
+          lmer(
+            update(fes_and_res, ci ~ .), data = data %>%
+              mutate(ci = c(covmat[, i]))
+          )
         )
       }
       for(i in 1:ncol(varmat)) {
         varmat[, i] <- resid(
-          lmer(update(fes_and_res, covmat[, i] ~ .), data = data)
+          lmer(
+            update(fes_and_res, vi ~ .), data = data %>%
+              mutate(vi = c(varmat[, i]))
+          )
         )
       }
     } else {
       for(i in 1:ncol(covmat)) {
         covmat[, i] <- resid(
-          lm(update(fes_and_res, covmat[, i] ~ .), data = data)
+          lm(
+            update(fes_and_res, ci ~ .), data = data %>%
+              mutate(ci = c(covmat[, i]))
+          )
         )
       }
       for(i in 1:ncol(varmat)) {
         varmat[, i] <- resid(
-          lm(update(fes_and_res, covmat[, i] ~ .), data = data)
+          lm(
+            update(fes_and_res, vi ~ .), data = data %>%
+              mutate(vi = c(varmat[, i]))
+          )
         )
       }
     }
   }
 
-  # Adjust for covaraites using random forests
+  # Adjust for covariates using random forests
   ## The response
   yrf <-
     ranger(

@@ -4,7 +4,15 @@
 \alias{rfa}
 \title{Estimate Average Treatment Effect via Random Forest Adjustment}
 \usage{
-rfa(formula, covariates, data = NULL, se_type = "stata", clusters = NULL, ...)
+rfa(
+  formula,
+  covariates,
+  fes_and_res = NULL,
+  data = NULL,
+  se_type = "stata",
+  clusters = NULL,
+  ...
+)
 }
 \arguments{
 \item{formula}{a formula object where the left-hand variable is the outcome
@@ -12,6 +20,10 @@ and the right-hand variable is the explanatory variable of interest.}
 
 \item{covariates}{a formula object only containing the right-hand side specifying
 the covariates to be used in the random forest regressions.}
+
+\item{fes_and_res}{a formula object only containing the righ-hand side specifying
+any fixed effects or random effects. If random effects, you should use the notation
+`~ (1 | id)` as in the `{lme4}` package.}
 
 \item{data}{an optional data frame containing the variables used to
 implement the RFA routine.}
@@ -38,10 +50,15 @@ This function estimates the average treatment effect of an explanatory
 variable on some response variable using a procedure called Random Forest
 Adjustment (RFA). RFA partials out the variation in a response and explanatory
 variable of interest as a function of a set of covariates using random forest
-regression. The latest version relies on the ranger package, which
+regression. The latest version relies on the `{ranger}` package, which
 provides a fast implementation of the random forest aglorithm (Brieman 2001).
 }
 \details{
+The package further supports fixed and random effects as well. For random effects,
+the `lmer` function from the `{lme4}` package is used. By specifying fixed or
+random effects, the response, treatment, and covariates are demeaned according to
+any fixed or random effects specified prior to random forest adjustment.
+
 The RFA routine provides an estimate of the marginal relationship
 between some
 predictor (either binary or continuous) and a response variable, adjusting

@@ -29,9 +29,9 @@ Random Forest Adjustment (RFA) is a procedure for estimating the relationship be
 
 ## RFA in a Nutshell
 
-RFA is a flexible approach to regression adjustment for controlling for covariates in observational settings. By leveraging a nonparametric machine learning algorithm such as random forests, RFA sidesteps the incidental functional form assumptions imposed by the standard multiple linear regression approach to covariate adjustment. This makes RFA robust to more complex (nonlinear or nonadditive) forms of confounding relationships in observational data that a parametric approach may fail to account for. 
+RFA is a flexible approach to regression adjustment for controlling for covariates in observational settings. By leveraging a nonparametric machine learning algorithm such as random forests, RFA sidesteps the incidental functional form assumptions imposed by the standard multiple linear regression approach to covariate adjustment. This makes RFA robust to more complex (nonlinear or nonadditive) forms of confounding relationships in observational data that a parametric approach may fail to account for. The latest version of the package can accommodate fixed and random effects as well.
 
-RFA begins by predicting some response $y_i$ and some causal variable of interest $z_i$ as a function of covariates $x_{ip} \in X_i$ where $y_i,z_i \not\!\perp\!\!\!\perp X_i$. The variables $y_i$ and $z_i$ denote vectors of response and predictor values for the $i^\text{th}$ observation where $i \in I = \{1,2,...,n \}$. 
+RFA works by partialing out variation in an outcome $y_i$ and some causal variable of interest $z_i$ as a function of covariates $x_{ip} \in X_i$ where $y_i,z_i \not\!\perp\!\!\!\perp X_i$. The variables $y_i$ and $z_i$ denote vectors of response and predictor values for the $i^\text{th}$ observation where $i \in I = \{1,2,...,n \}$. 
 
 Because $z_i$ and $y_i$ are not independent of $X_i$, the estimated slope coefficient ($\alpha_1$) from the following linear model may not reflect the correct relationship between $z_i$ on $y_i$:
 $$y_i = \alpha_0 + \alpha_1z_i + \epsilon_i. \tag{1}$$
@@ -55,16 +55,17 @@ $$
 \end{aligned} \tag{3}
 $$
 
-  3. Finally, the marginal relationship, adjusting for the confounding influence of $X_i$, is obtained by estimating the following linear model:
+  3. Finally, the marginal relationship, adjusting for the confounding influence of $X_i$, is obtained by estimating the following linear model using the transformed data:
 
 $$\hat{y}_i^\varepsilon = \beta_0 + \beta_1\hat{z}_i^\varepsilon + \mu_i.\tag{4}$$
 
+If desired, fixed or random effects are incorporated by conducting an additional pre-processing step where the response, the causal variable, and each of the covariates are demeaned via fixed effect, random effect, or mixed effect regressions prior to random forest adjustment.
 
 ## What is the Benefit of This Approach?
 
 The advantage of RFA is that it sidesteps incidental functional form assumptions that the more conventional multiple regression adjustment strategy imposes. This can be easily demonstrated with a simple simulation. 
 
-For said simulation:
+For the simulation:
 
   1. I set $n = 500$ and set the the parameter for the true relationship between a response and explanatory variable of interest ($\beta_1$) to 5.
   2. The data-generating process for the outcome variable $y_i$ is given as
@@ -141,7 +142,14 @@ results %>%
 
 ## How to Implement in R
 
-The `rfa` function in the `RFA` package allows the researcher to easily implement the RFA routine. Here, I demonstrate how the program is used with the assistance of the `GerberGreenImai` dataset included in the `Matching` package. This dataset was used in Imai (2005) to replicate and extend Gerber and Green's (2000) get-out-the-vote (GOT) field experiment. The dataset was used to assess the causal effect of telephone calls on turnout. Note that this data is used for demonstration purposes only, and so results here should not be taken as confirmation or refutation of the findings of the original authors.
+To perform RFA analysis in R I created a package called `{RFA}`, which can be installed by writing:
+
+```
+## install.packages("devtools")
+devtools::install_github("milesdwilliams15/RFA")
+```
+
+Here, I demonstrate how the package functions can used to estimate causal effects with observational data. I'll do this with the `GerberGreenImai` dataset included in the `{Matching}` package. This dataset was used in Imai (2005) to replicate and extend Gerber and Green's (2000) get-out-the-vote (GOT) field experiment. The dataset was used to assess the causal effect of telephone calls on turnout. Note that this data is used for demonstration purposes only, and so results here should not be taken as confirmation or refutation of the findings of the original authors.
 
 First, let's get the data into the working environment:
 
@@ -152,35 +160,34 @@ data(GerberGreenImai)
 ggi <- GerberGreenImai # give it a shorter name
 ```
 
-Next, to implement RFA, we need to attach the `RFA` package:
+Next, to implement RFA, we need to open the `RFA` package:
 
 ```{r}
 library(RFA)
 ```
 
-If not already installed, the latest development version can be installed by entering `devtools::install_github("milesdwilliams15/RFA")` in the console.
-
-The RFA routine is implemented with the function `rfa(...)`. The help file for the function can be accessed by entering `?rfa`. The function accepts the following arguments:
+The workhorse function in the package is `rfa()`. The help file for the function can be accessed by entering `?rfa`. The function accepts the following arguments:
 
 
- - `formula` = a formula object where the left-hand variable is the outcome and the right-hand variable is the explanatory variable of interest.
+  - `formula` = a formula object where the left-hand variable is the outcome and the right-hand variable is the explanatory variable of interest.
   - `covariates` = a right-handed formula object specifying the covariates to be used in the random forest regressions.
+  - `fes_and_res` = a formula object only containing the right-hand side specifying any fixed effects or random effects. If random effects, you should use the notation '~ (1 | id)' as in the 'lme4' package.
   - `data` =	an optional data frame containing the variables used to implement the RFA routine.
   - `se_type` = specifies the standard errors to be returned. If 'clusters' is not specified, the user can specify "classical", "HC0", "stata" (equivalent to "HC1"), "HC2", or "HC3". If 'clusters' is specified, the options are "CR0", "stata" (CR1), and "CR2". "stata" is the default.
   - `clusters` = optional name (quoted) of variable that corresponds to clusters in the data.
   - `...` = additional commands to override the default settings for implementing random forests via 'ranger'. See the `ranger` package for more details.
 
-Below is an example of how to use `rfa` with the `ggi` dataset. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the right-hand side variable in the formula. The covariates to control for are given in the `covariates` command in a right-hand side only formula. These covariates are: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, whether they support the majority party, and their ward of residence in New Haven.
+Below is an example of how to use `rfa` with the `ggi` dataset. In the formula object below, the left-hand side variable is a binary response that equals 1 when an individual citizen turned out to vote in the 1998 congressional election in New Haven, CT. The treatment variable (whether the individual received a GOT phone call) is the right-hand side variable in the formula. The covariates to control for are given in the `covariates` command in a right-hand side only formula. These covariates are: an individual's age, whether they voted in the previous election (in 1996), the number of persons residing in their household, whether they are a new voter, and whether they support the majority party.
 
 ```{r}
 rfa_fit <- rfa(
   formula = VOTED98 ~ PHN.C1, # treatment variable
-  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY + WARD, # confounders
+  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY, # confounders
   data = ggi
 )
 ```
 
-`rfa_fit` consists of a list containing the fitted regression results:
+The object `rfa_fit` consists of a list containing the fitted regression results:
 
 ```{r}
 rfa_fit$fit
@@ -204,7 +211,7 @@ and an updated dataframe that adds the processed response and explanatory variab
 head(rfa_fit$data)
 ```
 
-From the above, we see that the RFA routine estimates that the efect of a GOT phone call on the probability of turning out to vote is approximately `r round(tidy(rfa_fit$fit)[2,2],3)`. A summary for this estimate is provided by using `summary_rfa`. The output also includes the OOB (out of bag) $R^2$ for the random forest regressions for the response and the explanatory variable.
+From the above, we see that the RFA routine estimates that the effect of a GOT phone call on the probability of turning out to vote is approximately `r round(tidy(rfa_fit$fit)[2,2],3)`. A summary for this estimate is provided by using `summary_rfa`. The output also includes the OOB (out of bag) $R^2$ for the random forest regressions for the response and the explanatory variable.
 
 ```{r}
 summary_rfa(rfa_fit) %>%
@@ -213,13 +220,13 @@ summary_rfa(rfa_fit) %>%
 
 Sure enough, the ATE is statistically significant, with $p < 0.01$.
 
-We can also use the `plot_rfa` function to plot the distribution of bootstrapped ATE replicates:
+We can also use the `plot_rfa` function to quickly make a coefficient plot for the treatment effect:
 
 ```{r, fig.height=3, fig.width=4}
 plot_rfa(rfa_fit)
 ```
 
-Further, since `plot_rfa` is a wrapper for `ggplot2`, we can modify the RFA plot however we see fit:
+Since `plot_rfa` is a wrapper for `ggplot2`, we can modify the RFA plot however we see fit:
 
 ```{r, fig.height=3, fig.width=6}
 plot_rfa(rfa_fit, varname = "Phone Call") +
@@ -232,12 +239,60 @@ plot_rfa(rfa_fit, varname = "Phone Call") +
   theme_test()
 ```
 
+## Adding Fixed or Random Effects
+
+Fixed or random effects can be specified as well. We could do so using the `WARD` column in the data.
+
+If we wanted ward fixed effects we would write:
+
+```{r}
+fe_rfa <- rfa(
+  formula = VOTED98 ~ PHN.C1, # treatment variable
+  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY, # confounders
+  fes_and_res = ~ WARD, # FEs
+  data = ggi
+)
+```
+
+
+If we wanted ward random effects we would write:
+
+```{r}
+re_rfa <- rfa(
+  formula = VOTED98 ~ PHN.C1, # treatment variable
+  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY, # confounders
+  fes_and_res = ~ (1 | WARD), # FEs
+  data = ggi
+)
+```
+
+To compare the results, we can easily create a regression table using the `{texreg}` package:
+
+```{r}
+library(texreg)
+htmlreg(
+  list(
+    "(1)" = rfa_fit$fit,
+    "(2)" = fe_rfa$fit,
+    "(3)" = re_rfa$fit
+  ),
+  custom.coef.map = list(
+    "xres" = "Phone Call"
+  ),
+  custom.header = list("Voter Turnout" = 1:3),
+  include.ci = F,
+  digits = 3,
+  caption = "RFA estimates",
+  caption.above = T
+)
+```
+
 
 ## Diagnosing RFA Estimates
 
-The point estimate reported via random forest adjustment may not always be the only, or even most interesting, quantity of importance. Researchers may also have an interest in assessing which covariates in the data sample were the most substantial source of confounding. They may also wish to characterize the *effective* sample used to identify the partial relationship between the explanatory variable and response. As [Aronow and Samii (2016)](https://onlinelibrary.wiley.com/doi/abs/10.1111/ajps.12185) caution, the process of adjusting for covariates often distorts the data sample used to identify some causal relationship of interest. Often, reported estimates reflect a local effect, that cannot be generalized beyond a more circumscribed data sample than that used at the outset of the analysis.
+The point estimate reported via random forest adjustment may not always be the only, or even most interesting, quantity of importance. Researchers may also have an interest in assessing which covariates in the data sample were the most substantial source of confounding. They may also wish to characterize the *effective* sample used to identify the partial relationship between the explanatory variable and response. As [Aronow and Samii (2016)](https://onlinelibrary.wiley.com/doi/abs/10.1111/ajps.12185) caution, the process of adjusting for covariates often distorts the data sample used to identify some causal relationship of interest. Often, reported estimates reflect a local effect that cannot be generalized beyond a more circumscribed data sample than that used at the outset of the analysis.
 
-The latest version of the `RFA` package includes two additional functions that help in performing these diagnostics. These are `get_cod()` and `get_importance()`.
+Because it is so important to contextualize how adjustment for covariates changes the sample used to estimate treatment effects, the `{RFA}` package includes two additional functions that help in performing some diagnostics. These are `get_cod()` and `get_importance()`.
 
 The latter returns a data frame that reports variable importance metrics for each of the covariates used in the analysis, with respect to the response and explanatory variable of interest. 
 
@@ -248,7 +303,7 @@ For example, if we wanted to get the Gini importance for covariates we would sim
 ```{r}
 rfa_fit <- rfa(
   formula = VOTED98 ~ PHN.C1, # treatment variable
-  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY + WARD, # confounders
+  covariates = ~ AGE + VOTE96.1 + PERSONS + NEW + MAJORPTY, # confounders
   data = ggi,
   importance = "impurity" # Specify impurity importance
 )
